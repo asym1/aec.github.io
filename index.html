@@ -4,10 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AEC Portfolio</title>
-
-  <!-- PDF.js Library via CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
   <style>
     * {
       box-sizing: border-box;
@@ -16,85 +12,68 @@
     }
 
     body {
-      background-color: #0f172a;
+      background-color: #0b0f19;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
       padding: 24px 12px;
-      overflow-y: auto;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    #loading-indicator {
-      color: #94a3b8;
-      font-size: 16px;
-      margin-top: 40px;
-    }
-
-    #pdf-container {
+    .portfolio-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
       width: 100%;
-      max-width: 1100px;
+      max-width: 1200px;
     }
 
-    .pdf-page-canvas {
-      display: block;
+    .portfolio-page {
       width: 100%;
       height: auto;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      display: block;
       border-radius: 4px;
-      background-color: #ffffff;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      background-color: #1e293b; /* Placeholder color before image paints */
     }
   </style>
 </head>
 <body>
 
-  <div id="loading-indicator">Loading portfolio...</div>
-  <div id="pdf-container"></div>
+  <main class="portfolio-container" id="portfolio">
+    <!-- Page 1 is eager-loaded with high priority for instant LCP paint -->
+    <img
+      src="images/1.jpg"
+      alt="AEC Portfolio Page 1"
+      class="portfolio-page"
+      loading="eager"
+      fetchpriority="high"
+    >
+  </main>
 
   <script>
-    // Set the worker source for PDF.js
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const TOTAL_PAGES = 48;
+    const container = document.getElementById('portfolio');
 
-    // File path (ensure URL encoding for spaces)
-    const url = 'AEC%20Portfolio.pdf';
-    const container = document.getElementById('pdf-container');
-    const loadingIndicator = document.getElementById('loading-indicator');
+    // Dynamically append the remaining pages with native lazy-loading
+    for (let i = 2; i <= TOTAL_PAGES; i++) {
+      const img = document.createElement('img');
+      img.src = `images/${i}.jpg`;
+      img.alt = `AEC Portfolio Page ${i}`;
+      img.className = 'portfolio-page';
+      img.loading = 'lazy';
+      img.decoding = 'async';
 
-    // Fetch and render all pages sequentially
-    pdfjsLib.getDocument(url).promise.then(async function (pdfDoc) {
-      loadingIndicator.style.display = 'none';
+      // Automatically stop rendering if a page index doesn't exist
+      img.onerror = function() {
+        this.remove();
+      };
 
-      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-        const page = await pdfDoc.getPage(pageNum);
-
-        // Render at 2x resolution to maintain sharpness on high-DPI screens
-        const viewport = page.getViewport({ scale: 2.0 });
-
-        const canvas = document.createElement('canvas');
-        canvas.className = 'pdf-page-canvas';
-        const ctx = canvas.getContext('2d');
-
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        const renderContext = {
-          canvasContext: ctx,
-          viewport: viewport
-        };
-
-        await page.render(renderContext).promise;
-        container.appendChild(canvas);
-      }
-    }).catch(function (error) {
-      loadingIndicator.textContent = 'Failed to load PDF. Check file name and path.';
-      console.error('Error loading PDF:', error);
-    });
+      container.appendChild(img);
+    }
   </script>
+
 </body>
 </html>
