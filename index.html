@@ -1,13 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Presentation</title>
-    <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-        iframe { width: 100%; height: 100%; border: none; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AEC Portfolio</title>
+
+  <!-- PDF.js Library via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 12px;
+      overflow-y: auto;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #loading-indicator {
+      color: #94a3b8;
+      font-size: 16px;
+      margin-top: 40px;
+    }
+
+    #pdf-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .pdf-page-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      border-radius: 4px;
+      background-color: #ffffff;
+    }
+  </style>
 </head>
 <body>
-    <iframe src="AEC Portfolio.pdf"></iframe>
+
+  <div id="loading-indicator">Loading portfolio...</div>
+  <div id="pdf-container"></div>
+
+  <script>
+    // Set the worker source for PDF.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // File path (ensure URL encoding for spaces)
+    const url = 'AEC%20Portfolio.pdf';
+    const container = document.getElementById('pdf-container');
+    const loadingIndicator = document.getElementById('loading-indicator');
+
+    // Fetch and render all pages sequentially
+    pdfjsLib.getDocument(url).promise.then(async function (pdfDoc) {
+      loadingIndicator.style.display = 'none';
+
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        const page = await pdfDoc.getPage(pageNum);
+
+        // Render at 2x resolution to maintain sharpness on high-DPI screens
+        const viewport = page.getViewport({ scale: 2.0 });
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'pdf-page-canvas';
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        const renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+
+        await page.render(renderContext).promise;
+        container.appendChild(canvas);
+      }
+    }).catch(function (error) {
+      loadingIndicator.textContent = 'Failed to load PDF. Check file name and path.';
+      console.error('Error loading PDF:', error);
+    });
+  </script>
 </body>
 </html>
